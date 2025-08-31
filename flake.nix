@@ -42,6 +42,8 @@
     in {
       inherit name src;
 
+      packages.default = verus;
+
       devShells.default = pkgs.mkShell {
         buildInputs = [
           verus
