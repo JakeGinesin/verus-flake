@@ -6,10 +6,11 @@
   outputs = {
     self,
     nixpkgs,
-    flake-utils,
     ...} @ inputs:
-    flake-utils.lib.eachDefaultSystem (system:
+    inputs.flake-utils.lib.eachDefaultSystem (system:
     let 
+      name = "verus-flake";
+      src = ./.;
       pkgs = nixpkgs.legacyPackages.${system};
       verus = pkgs.stdenv.mkDerivation {
         pname = "verus";
@@ -46,5 +47,7 @@
           echo "wow verus"
         '';
       };
-    });
+    }) // {
+      inherit (self.packages.${nixpkgs.lib.systems.examples.linux.system}) name src;
+    };
 }
