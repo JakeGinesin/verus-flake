@@ -4,59 +4,45 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = {
-    self,
-    nixpkgs,
-    ...} @ inputs:
+  outputs = { self, nixpkgs, ... } @ inputs:
     inputs.flake-utils.lib.eachDefaultSystem (system:
     let 
-      name = "verus-flake";
-      src = ./.;
       pkgs = nixpkgs.legacyPackages.${system};
+
+      version = "0.2025.11.15.db81a74";
+      hash = "0iijcvs8rlp4gx5y4g4z1wv8nqyz8nb4wlgk71rbmg2s084wcrz9";
+
+      # match Verus release naming conventions
+      arch = if system == "x86_64-linux" then "x86-linux"
+             else if system == "aarch64-darwin" then "aarch64-macos"
+             else if system == "x86_64-darwin" then "x86-macos"
+             else throw "Unsupported system: ${system}";
 
       verus = pkgs.stdenv.mkDerivation {
         pname = "verus";
-        version = "0.2025.08.23.bb6fd4e";
-
-        # get hash with nix-prefetch-url --unpack "https://github.com/verus-lang/verus/releases/download/release%2F0.2025.08.23.bb6fd4e/verus-0.2025.08.23.bb6fd4e-x86-linux.zip"
+        inherit version;
 
         src = pkgs.fetchzip {
-          url =
-            "https://github.com/verus-lang/verus/releases/download/release%2F0.2025.08.23.bb6fd4e/verus-0.2025.08.23.bb6fd4e-x86-linux.zip";
-          sha256 = "0r69kkjlmf612gj9lx37x298278s899dngkhwb2j08sa9i0kv2ir";
+          url = "https://github.com/verus-lang/verus/releases/download/release%2F${version}/verus-${version}-${arch}.zip";
+          sha256 = hash;
         };
 
         installPhase = ''
           mkdir -p $out
           cp -r $src/* $out/
-
           mkdir -p $out/bin
-          ln -s $out/verus $out/bin/verus
-          ln -s $out/cargo-verus $out/bin/cargo-verus
-          ln -s $out/rust_verify $out/bin/rust_verify
-          ln -s $out/z3 $out/bin/z3
+          for bin in verus cargo-verus rust_verify z3; do
+            ln -s $out/$bin $out/bin/$bin
+          done
         '';
-
       };
     in {
-      inherit name src;
       packages.default = verus;
 
       devShells.default = pkgs.mkShell {
-        buildInputs = [
-          verus
-          pkgs.rustup
-        ];
-
-        packages = [
-          pkgs.stdenv.cc.cc
-          pkgs.zlib
-          pkgs.openssl
-          pkgs.glib
-        ];
-
+        buildInputs = [ verus ];
         shellHook = ''
-          echo "wow verus"
+          echo "Verus ${version} loaded."
         '';
       };
     }
