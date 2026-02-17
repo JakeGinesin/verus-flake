@@ -14,7 +14,7 @@
 
       # match Verus release naming conventions
       arch = if system == "x86_64-linux" then "x86-linux"
-             else if system == "aarch64-darwin" then "aarch64-macos"
+             else if system == "aarch64-darwin" then "arm64-macos"
              else if system == "x86_64-darwin" then "x86-macos"
              else throw "Unsupported system: ${system}";
 
