@@ -9,8 +9,8 @@
     let 
       pkgs = nixpkgs.legacyPackages.${system};
 
-      version = "0.2025.11.15.db81a74";
-      hash = "0iijcvs8rlp4gx5y4g4z1wv8nqyz8nb4wlgk71rbmg2s084wcrz9";
+      version = "0.2026.03.22.5e66329";
+      hash = "sha256-/rSsNizWruoGgAJciXt8oWUfLUqqs8vBhcSKqxWzhl8=";
 
       # match Verus release naming conventions
       arch = if system == "x86_64-linux" then "x86-linux"
