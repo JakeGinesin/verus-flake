@@ -22,7 +22,7 @@
 
       rust-toolchain = (fenix.packages.${system}.fromToolchainName {
         name = "1.94.0";
-        sha256 = "sha256-qqF33vNuAdU5vua96VKVIwuc43j4EFeEXbjQ6+l4mO4="; 
+        sha256 = "sha256-qqF33vNuAdU5vua96VKVIwuc43j4EFeEXbjQ6+l4mO4=";
       }).completeToolchain;
 
       verus = pkgs.stdenv.mkDerivation {
@@ -46,6 +46,9 @@
       devShells.default = pkgs.mkShell {
         buildInputs = [ verus rust-toolchain ];
         shellHook = ''
+          export RUSTUP_HOME=$(mktemp -d)
+          mkdir -p "$RUSTUP_HOME/toolchains"
+          ln -s "${rust-toolchain}" "$RUSTUP_HOME/toolchains/1.94.0-x86_64-unknown-linux-gnu"
           echo "Verus ${version} loaded."
         '';
       };
