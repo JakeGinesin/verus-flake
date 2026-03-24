@@ -2,31 +2,36 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, ... } @ inputs:
+  outputs = { self, nixpkgs, fenix, ... } @ inputs:
     inputs.flake-utils.lib.eachDefaultSystem (system:
-    let 
+    let
       pkgs = nixpkgs.legacyPackages.${system};
-
       version = "0.2026.03.22.5e66329";
       hash = "sha256-/rSsNizWruoGgAJciXt8oWUfLUqqs8vBhcSKqxWzhl8=";
 
-      # match Verus release naming conventions
       arch = if system == "x86_64-linux" then "x86-linux"
              else if system == "aarch64-darwin" then "aarch64-macos"
              else if system == "x86_64-darwin" then "x86-macos"
              else throw "Unsupported system: ${system}";
 
+      rust-toolchain = (fenix.packages.${system}.fromToolchainName {
+        name = "1.94.0";
+        sha256 = "sha256-qqF33vNuAdU5vua96VKVIwuc43j4EFeEXbjQ6+l4mO4="; 
+      }).completeToolchain;
+
       verus = pkgs.stdenv.mkDerivation {
         pname = "verus";
         inherit version;
-
         src = pkgs.fetchzip {
           url = "https://github.com/verus-lang/verus/releases/download/release%2F${version}/verus-${version}-${arch}.zip";
           sha256 = hash;
         };
-
         installPhase = ''
           mkdir -p $out
           cp -r $src/* $out/
@@ -38,13 +43,11 @@
       };
     in {
       packages.default = verus;
-
       devShells.default = pkgs.mkShell {
-        buildInputs = [ verus ];
+        buildInputs = [ verus rust-toolchain ];
         shellHook = ''
           echo "Verus ${version} loaded."
         '';
       };
-    }
-  );
+    });
 }
