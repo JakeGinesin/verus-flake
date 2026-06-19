@@ -9,8 +9,7 @@
     let 
       pkgs = nixpkgs.legacyPackages.${system};
 
-      version = "0.2026.03.22.5e66329";
-      hash = "sha256-/rSsNizWruoGgAJciXt8oWUfLUqqs8vBhcSKqxWzhl8=";
+      version = "0.2026.06.14.4ea7d0f";
 
       # match Verus release naming conventions
       arch = if system == "x86_64-linux" then "x86-linux"
@@ -24,7 +23,7 @@
 
         src = pkgs.fetchzip {
           url = "https://github.com/verus-lang/verus/releases/download/release%2F${version}/verus-${version}-${arch}.zip";
-          sha256 = hash;
+          sha256 = "sha256-uJ85+QpsDExIoR83U9mqvN+VJ2S5hZ7q3+/d6VpJyEc=";
         };
 
         installPhase = ''
