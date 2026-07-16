@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            system: x86_64-linux
+          - runner: macos-latest
+            system: aarch64-darwin
+          - runner: macos-13
+            system: x86_64-darwin
+    runs-on: ${{ matrix.runner }}
+    name: build (${{ matrix.system }})
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v16
+
+      - name: Flake check
+        run: nix flake check --print-build-logs
+
+      - name: Build Verus
+        run: nix build --print-build-logs
+
+      - name: Smoke test
+        run: nix run . -- --version

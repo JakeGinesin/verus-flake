@@ -1,0 +1,49 @@
+name: Update Verus
+
+# verus publishes a new release roughly every Monday (~01:45 UTC). Run a few
+# hours later to pick it up, and allow manual runs from the Actions tab.
+on:
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v16
+
+      - name: Update flake to latest Verus release
+        id: update
+        run: .github/update-verus.sh
+
+      - name: Verify the flake builds
+        if: steps.update.outputs.updated == 'true'
+        run: nix build --print-build-logs
+
+      - name: Open pull request
+        if: steps.update.outputs.updated == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: update-verus
+          title: "chore: update Verus to ${{ steps.update.outputs.version }}"
+          commit-message: |
+            chore: update Verus to ${{ steps.update.outputs.version }}
+
+            Bump ${{ steps.update.outputs.previous }} -> ${{ steps.update.outputs.version }}
+          body: |
+            Automated update to Verus release `${{ steps.update.outputs.version }}`.
+
+            - Previous: `${{ steps.update.outputs.previous }}`
+            - Latest: `${{ steps.update.outputs.version }}`
+
+            Version and per-arch hashes updated by `.github/update-verus.sh`.
+            `nix build` succeeded on `x86_64-linux`.
+          delete-branch: true
