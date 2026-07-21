@@ -32,6 +32,8 @@ jobs:
         if: steps.update.outputs.updated == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
+          # Fixed branch name: the action updates this one PR in place on each
+          # run rather than opening a new PR every week (see below).
           branch: update-verus
           title: "chore: update Verus to ${{ steps.update.outputs.version }}"
           commit-message: |
@@ -45,5 +47,4 @@ jobs:
             - Latest: `${{ steps.update.outputs.version }}`
 
             Version and per-arch hashes updated by `.github/update-verus.sh`.
-            `nix build` succeeded on `x86_64-linux`.
           delete-branch: true
