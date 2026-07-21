@@ -54,9 +54,19 @@
       packages.default = verus;
 
       devShells.default = pkgs.mkShell {
-        buildInputs = [ verus ];
+        buildInputs = [ verus pkgs.rustup ];
         shellHook = ''
           echo "Verus ${version} loaded."
+
+          # Verus is not self-contained since it needs the matching rustup toolchain
+          # (recorded in version.json) installed to actually run.
+          toolchain=$(sed -n 's/.*"toolchain"[^"]*"\([^"]*\)".*/\1/p' ${verus}/version.json)
+          if [ -n "$toolchain" ] && ! rustup toolchain list 2>/dev/null | grep -q "$toolchain"; then
+            echo ""
+            echo "Verus requires the Rust toolchain '$toolchain', which is not installed."
+            echo "Install it with:"
+            echo "  rustup install $toolchain"
+          fi
         '';
       };
     }

@@ -24,12 +24,40 @@ jobs:
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@v16
+        with:
+          # Give Nix's own downloader more patience during flaky/degraded
+          # GitHub API performance when fetching flake inputs.
+          extra-conf: |
+            connect-timeout = 20
+            download-attempts = 5
+            stalled-download-timeout = 90
 
-      - name: Flake check
-        run: nix flake check --print-build-logs
+      # Retry across a few minutes so transient GitHub/input-fetch blips
+      # (e.g. 503s while fetching flake inputs) self-heal instead of failing
+      # the run. A full GitHub outage will still fail — nothing runner-side
+      # can reach GitHub when GitHub is down.
+      - name: Flake check and build
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 20
+          max_attempts: 3
+          retry_wait_seconds: 60
+          command: |
+            nix flake check --print-build-logs
+            nix build --print-build-logs
 
-      - name: Build Verus
-        run: nix build --print-build-logs
+      # Prebuilt Verus is not self-contained: at runtime its launcher shells
+      # out to rustup for the exact Rust toolchain it was built against (see
+      # version.json). GitHub runners ship rustup but not this specific
+      # toolchain, so install it before running Verus. Read the version from
+      # the build output so this keeps working after the weekly auto-update.
+      - name: Install Verus's Rust toolchain
+        run: |
+          out=$(nix build --no-link --print-out-paths)
+          tc=$(grep -oE '"toolchain"[^"]*"[^"]*"' "$out/version.json" \
+                 | sed -E 's/.*"toolchain"[^"]*"([^"]*)".*/\1/')
+          echo "Verus requires Rust toolchain: $tc"
+          rustup install "$tc"
 
       - name: Smoke test
         run: nix run . -- --version
