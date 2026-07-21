@@ -15,8 +15,11 @@ jobs:
             system: x86_64-linux
           - runner: macos-latest
             system: aarch64-darwin
-          - runner: macos-13
-            system: x86_64-darwin
+          # NOTE: x86_64-darwin (Intel macOS) is intentionally not tested here.
+          # GitHub retired the free macos-13 Intel runner on 2025-12-04, and
+          # x86_64 macOS is only available on paid *-large runners. The flake
+          # still supports x86_64-darwin (see the x86-macos hash); it just
+          # isn't exercised in CI.
     runs-on: ${{ matrix.runner }}
     name: build (${{ matrix.system }})
     steps:
