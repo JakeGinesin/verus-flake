@@ -9,7 +9,7 @@
     let 
       pkgs = nixpkgs.legacyPackages.${system};
 
-      version = "0.2026.07.27.31579f0";
+      version = "0.2026.08.02.b677dd5";
 
       # match Verus release naming conventions
       arch = if system == "x86_64-linux" then "x86-linux"
@@ -20,9 +20,9 @@
       # SRI hash of each release zip, keyed by Verus arch string
       # version + hashes are updated automatically by .github/workflows/update.yml
       hashes = {
-        "x86-linux"   = "sha256-KGFeqCykugDmDltxNfQJ1geIsTsuEQ5LBMR3MaqGXtA=";
-        "arm64-macos" = "sha256-Pa+euxS/UF6v74WefCB/DFrJkFNAj/QjI+iXlR0yxvU=";
-        "x86-macos"   = "sha256-L6poZZibVw3L7h1AbcWAKvW0aHQlOZNVhPo0moR6VIg=";
+        "x86-linux"   = "sha256-Z8m5+fwFAviJcbsttcag6wkZphEws/IksIYGDssVQK4=";
+        "arm64-macos" = "sha256-GPClXpsi9orPh20jePxaiSEbf5m5wOkawpU4SvZT0Tc=";
+        "x86-macos"   = "sha256-BbFuliJfcKrwzp+UcZHZigpt5vRjoa5gmPT/1u6+QLo=";
       };
 
       verus = pkgs.stdenv.mkDerivation {
