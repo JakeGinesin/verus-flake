@@ -1,4 +1,6 @@
 {
+  description = "Verus: verified Rust for low-level systems code (binary releases)";
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
@@ -6,10 +8,11 @@
 
   outputs = { self, nixpkgs, ... } @ inputs:
     inputs.flake-utils.lib.eachDefaultSystem (system:
-    let 
+    let
       pkgs = nixpkgs.legacyPackages.${system};
+      lib = pkgs.lib;
 
-      version = "0.2026.08.30.b432e82";
+      version = "0.2026.09.06.8dea4a2";
 
       # match Verus release naming conventions
       arch = if system == "x86_64-linux" then "x86-linux"
@@ -20,10 +23,27 @@
       # SRI hash of each release zip, keyed by Verus arch string
       # version + hashes are updated automatically by .github/workflows/update.yml
       hashes = {
-        "x86-linux"   = "sha256-uwvKA/mKbidAqah+iSEYgKIKZo0jclwP5mXm4AjPuIs=";
-        "arm64-macos" = "sha256-XNcwKrD6wA9oqdA96pvnwybvXYpqzXLctmTB87Z387w=";
-        "x86-macos"   = "sha256-FtTDJFHBd4OhktsDR9kzcTNZ7wqm+y3eLrmK2TiDpsE=";
+        "x86-linux"   = "sha256-ChANi0huj86oahonazghf7DYIBB4nAcktwbZ6wE2SjE=";
+        "arm64-macos" = "sha256-9DSreUzkiAQjjWRB/CW4HM1ONMp08jHjxPz0vx3gUJ8=";
+        "x86-macos"   = "sha256-6RZH/SJQDISiZRjKTSOIh2VWzCzzxBs1RNVv70ueS+w=";
       };
+
+      programs = [ "verus" "cargo-verus" "rust_verify" ];
+
+      z3Version = "4.16.0";
+
+      z3 = pkgs.z3.overrideAttrs (old: {
+        version = z3Version;
+        src = pkgs.fetchFromGitHub {
+          owner = "Z3Prover";
+          repo = "z3";
+          tag = "z3-${z3Version}";
+          hash = "sha256-DnhX3kxggnFmyYwXEPBsBA1rh4oor1oIJR5TMJk/jvc=";
+        };
+      });
+
+      runtimeLibs = lib.optionalString pkgs.stdenv.isLinux
+        "--prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ pkgs.zlib pkgs.stdenv.cc.cc.lib ]}";
 
       verus = pkgs.stdenv.mkDerivation {
         pname = "verus";
@@ -34,33 +54,71 @@
           sha256 = hashes.${arch};
         };
 
-        nativeBuildInputs = [ pkgs.makeWrapper ];
+        dontUnpack = true;
+        dontConfigure = true;
+        dontBuild = true;
 
-        # Verus locates its runtime root (verusroot) and helper binaries
-        # (z3, rust_verify) relative to the real executable, so a bare symlink
-        # in bin/ breaks it. so, makeWrapper is required
+        nativeBuildInputs = [ pkgs.makeWrapper ]
+          ++ lib.optional pkgs.stdenv.isLinux pkgs.autoPatchelfHook;
+
+        autoPatchelfIgnoreMissingDeps = [ "librustc_driver-*.so" ];
+
+        buildInputs = lib.optionals pkgs.stdenv.isLinux [
+          pkgs.stdenv.cc.cc.lib
+          pkgs.zlib
+        ];
+
         installPhase = ''
-          mkdir -p $out
-          cp -r $src/* $out/
+          runHook preInstall
+
           mkdir -p $out/bin
-          for bin in verus cargo-verus rust_verify z3; do
-            makeWrapper $out/$bin $out/bin/$bin
+          # `$src/.` rather than `$src/*` so dotfiles (.verus-root) come along
+          cp -r $src/. $out/
+          # store copies come back read-only; autoPatchelf needs write
+          chmod -R u+w $out
+
+          # remove build and incremental, useless at runtime for verus
+          rm -rf $out/build $out/incremental
+          # same for bump_crate_versions
+          rm -f $out/bump_crate_versions $out/bump_crate_versions.d \
+                $out/deps/bump_crate_versions-*
+
+          ln -s ${z3}/bin/z3 $out/z3
+
+          for bin in ${toString programs}; do
+            makeWrapper $out/$bin $out/bin/$bin \
+              --set-default VERUS_Z3_PATH ${z3}/bin/z3 \
+              ${runtimeLibs}
           done
+
+          runHook postInstall
         '';
 
-        meta.mainProgram = "verus";
+        meta = {
+          description = "Verified Rust for low-level systems code";
+          homepage = "https://github.com/verus-lang/verus";
+          license = [ lib.licenses.mit lib.licenses.asl20 ];
+          platforms = [ "x86_64-linux" "aarch64-darwin" "x86_64-darwin" ];
+          sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
+          mainProgram = "verus";
+        };
       };
     in {
-      packages.default = verus;
+      packages = {
+        default = verus;
+        inherit verus;
+      };
 
       devShells.default = pkgs.mkShell {
-        buildInputs = [ verus pkgs.rustup ];
+        packages = [ verus pkgs.rustup ];
         shellHook = ''
-          echo "Verus ${version} loaded."
+          echo "Verus ${version} loaded (z3 ${z3.version})."
 
           # Verus is not self-contained since it needs the matching rustup toolchain
-          # (recorded in version.json) installed to actually run.
-          toolchain=$(sed -n 's/.*"toolchain"[^"]*"\([^"]*\)".*/\1/p' ${verus}/version.json)
+          # (recorded in version.json) installed to actually run. The recorded
+          # value has a "(overridden by environment variable ...)" suffix because
+          # of how the release is built, so stop at the first space.
+          toolchain=$(sed -n 's/.*"toolchain"[^"]*"\([^" ]*\).*/\1/p' ${verus}/version.json)
           if [ -n "$toolchain" ] && ! rustup toolchain list 2>/dev/null | grep -q "$toolchain"; then
             echo ""
             echo "Verus requires the Rust toolchain '$toolchain', which is not installed."
