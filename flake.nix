@@ -42,6 +42,9 @@
         };
       });
 
+      runtimeLibs = lib.optionalString pkgs.stdenv.isLinux
+        "--prefix LD_LIBRARY_PATH : ${lib.makeLibraryPath [ pkgs.zlib pkgs.stdenv.cc.cc.lib ]}";
+
       verus = pkgs.stdenv.mkDerivation {
         pname = "verus";
         inherit version;
@@ -84,7 +87,8 @@
 
           for bin in ${toString programs}; do
             makeWrapper $out/$bin $out/bin/$bin \
-              --set-default VERUS_Z3_PATH ${z3}/bin/z3
+              --set-default VERUS_Z3_PATH ${z3}/bin/z3 \
+              ${runtimeLibs}
           done
 
           runHook postInstall
