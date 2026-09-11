@@ -56,10 +56,11 @@ jobs:
       - name: Install Verus's Rust toolchain
         run: |
           out=$(nix build --no-link --print-out-paths)
-          tc=$(grep -oE '"toolchain"[^"]*"[^"]*"' "$out/version.json" \
-                 | sed -E 's/.*"toolchain"[^"]*"([^"]*)".*/\1/')
+          tc=$(jq -re '.verus.toolchain' "$out/version.json" | cut -d' ' -f1)
+          [ -n "$tc" ] || { echo "could not read toolchain from version.json" >&2; exit 1; }
           echo "Verus requires Rust toolchain: $tc"
           rustup install "$tc"
+          rustup default "$tc"
 
       - name: Smoke test
         run: nix run . -- --version
