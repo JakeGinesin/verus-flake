@@ -37,8 +37,7 @@ jobs:
 
       # Retry across a few minutes so transient GitHub/input-fetch blips
       # (e.g. 503s while fetching flake inputs) self-heal instead of failing
-      # the run. A full GitHub outage will still fail — nothing runner-side
-      # can reach GitHub when GitHub is down.
+      # the run. 
       - name: Flake check and build
         uses: nick-fields/retry@v3
         with:
