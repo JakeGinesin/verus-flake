@@ -12,7 +12,7 @@
       pkgs = nixpkgs.legacyPackages.${system};
       lib = pkgs.lib;
 
-      version = "0.2026.09.06.8dea4a2";
+      version = "0.2026.09.13.671956e";
 
       # match Verus release naming conventions
       arch = if system == "x86_64-linux" then "x86-linux"
@@ -23,9 +23,9 @@
       # SRI hash of each release zip, keyed by Verus arch string
       # version + hashes are updated automatically by .github/workflows/update.yml
       hashes = {
-        "x86-linux"   = "sha256-ChANi0huj86oahonazghf7DYIBB4nAcktwbZ6wE2SjE=";
-        "arm64-macos" = "sha256-9DSreUzkiAQjjWRB/CW4HM1ONMp08jHjxPz0vx3gUJ8=";
-        "x86-macos"   = "sha256-6RZH/SJQDISiZRjKTSOIh2VWzCzzxBs1RNVv70ueS+w=";
+        "x86-linux"   = "sha256-lMLLfsueqolx2e3VtCtAmdAYAajOsoJOSVjbjzhzoQQ=";
+        "arm64-macos" = "sha256-UUAj9w7Dv0Qkew31NmQJc5VpkfFsMmqw/cBWIN1PSoQ=";
+        "x86-macos"   = "sha256-4TuSfjH5kcx8Jsnyyj5yg/i37mPiYjBYPasNfBs83IE=";
       };
 
       programs = [ "verus" "cargo-verus" "rust_verify" ];
