@@ -83,6 +83,7 @@
           rm -f $out/bump_crate_versions $out/bump_crate_versions.d \
                 $out/deps/bump_crate_versions-*
 
+          rm -rf $out/z3
           ln -s ${z3}/bin/z3 $out/z3
 
           for bin in ${toString programs}; do
